@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { walletService } from '../services/walletService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -28,6 +29,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       await authenticate();
     } catch (error) {
       console.error('Wallet connection failed:', error);
+    }
+  };
+
+  const handleSwitchToAbstract = async () => {
+    try {
+      await walletService.switchToAbstractNetwork();
+      await connectWallet();
+      await authenticate();
+    } catch (error) {
+      console.error('Abstract wallet connection failed:', error);
     }
   };
 
@@ -144,6 +155,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">{user.username}</p>
                     <p className="text-xs text-gray-500">{user.totalXP.toLocaleString()} XP</p>
+                    {walletService.isAbstractWallet() && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                        Abstract Wallet
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={handleDisconnect}
@@ -154,14 +170,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={handleWalletConnect}
-                  disabled={isLoading}
-                  className="flex items-center gap-x-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
-                >
-                  <Wallet className="h-4 w-4" />
-                  {isLoading ? 'Connecting...' : 'Connect Wallet'}
-                </button>
+                <div className="flex items-center gap-x-2">
+                  <button
+                    onClick={handleWalletConnect}
+                    disabled={isLoading}
+                    className="flex items-center gap-x-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    <Wallet className="h-4 w-4" />
+                    {isLoading ? 'Connecting...' : 'Connect Wallet'}
+                  </button>
+                  {!walletService.isInAbstractEcosystem() && (
+                    <button
+                      onClick={handleSwitchToAbstract}
+                      className="flex items-center gap-x-2 rounded-md bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:from-purple-600 hover:to-pink-600"
+                    >
+                      Use Abstract
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
