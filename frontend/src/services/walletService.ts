@@ -20,7 +20,6 @@ class AbstractWalletService {
   private signer: any = null;
   private walletInfo: WalletInfo | null = null;
   private isAbstractEcosystem = false;
-  private privyClient: any = null;
 
   constructor() {
     this.checkAbstractEcosystem();
@@ -36,16 +35,9 @@ class AbstractWalletService {
   }
 
   private async initializePrivy(): Promise<void> {
-    try {
-      // Dynamic import of Privy SDK
-      const { PrivyProvider, usePrivy, useCrossAppAccounts } = await import('@privy-io/react-auth');
-      
-      // For now, we'll simulate Privy initialization
-      // In a real implementation, you'd set up the PrivyProvider in your app
-      console.log('Privy SDK would be initialized here');
-    } catch (error) {
-      console.log('Privy SDK not available - using mock implementation');
-    }
+    // Note: Privy SDK integration removed due to dependency conflicts
+    // This is a simulation-only implementation for development
+    console.log('Using Abstract wallet simulation - real Privy integration requires proper setup');
   }
 
   async connectWallet(): Promise<WalletInfo | null> {
@@ -65,14 +57,6 @@ class AbstractWalletService {
 
   private async connectAbstractWallet(): Promise<WalletInfo> {
     try {
-      // Check if Privy is available
-      if (this.privyClient) {
-        // Real Privy integration would go here
-        // const { loginWithCrossAppAccount } = useCrossAppAccounts();
-        // await loginWithCrossAppAccount({ appId: 'your-abstract-app-id' });
-        throw new Error('Real Privy integration not yet implemented');
-      }
-
       // For development/testing - show user what's happening
       const shouldProceed = window.confirm(
         'Abstract Wallet Integration\n\n' +
