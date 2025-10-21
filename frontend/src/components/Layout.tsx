@@ -21,7 +21,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, walletInfo, isAuthenticated, isLoading, connectWallet, authenticate, disconnect } = useAuth();
+  const { user, isAuthenticated, isLoading, connectWallet, authenticate, disconnect } = useAuth();
 
   const handleWalletConnect = async () => {
     try {

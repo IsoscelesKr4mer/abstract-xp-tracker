@@ -19,7 +19,7 @@ const Dashboard: React.FC = () => {
     if (user?.walletAddress) {
       fetchXPData();
     }
-  }, [user]);
+  }, [user, fetchXPData]);
 
   const fetchXPData = async () => {
     if (!user?.walletAddress) return;
