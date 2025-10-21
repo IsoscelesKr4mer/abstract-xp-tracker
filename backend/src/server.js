@@ -20,7 +20,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/abstract-
 })
 .catch((error) => {
   console.error('❌ MongoDB connection error:', error);
-  process.exit(1);
+  console.log('⚠️  Running in demo mode without database');
+  console.log('💡 To fix: Install MongoDB or use MongoDB Atlas');
 });
 
 // Security middleware
