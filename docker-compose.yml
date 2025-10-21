@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: abstract-xp-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: abstract-xp-tracker
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - abstract-xp-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: abstract-xp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - abstract-xp-network
+
+  backend:
+    build: ./backend
+    container_name: abstract-xp-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/abstract-xp-tracker?authSource=admin
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - abstract-xp-network
+
+  frontend:
+    build: ./frontend
+    container_name: abstract-xp-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+    depends_on:
+      - backend
+    networks:
+      - abstract-xp-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  abstract-xp-network:
+    driver: bridge
