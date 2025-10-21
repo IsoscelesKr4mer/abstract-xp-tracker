@@ -34,11 +34,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleSwitchToAbstract = async () => {
     try {
+      // Show user what's happening
+      const proceed = window.confirm(
+        'Abstract Wallet Integration\n\n' +
+        'This will simulate Abstract wallet connection for development.\n' +
+        'In production, this would connect to your real Abstract Global Wallet.\n\n' +
+        'Continue with simulation?'
+      );
+
+      if (!proceed) return;
+
       await walletService.switchToAbstractNetwork();
       await connectWallet();
       await authenticate();
     } catch (error) {
       console.error('Abstract wallet connection failed:', error);
+      alert('Abstract wallet connection failed: ' + (error as Error).message);
     }
   };
 

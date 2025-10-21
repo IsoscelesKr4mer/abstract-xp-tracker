@@ -20,9 +20,11 @@ class AbstractWalletService {
   private signer: any = null;
   private walletInfo: WalletInfo | null = null;
   private isAbstractEcosystem = false;
+  private privyClient: any = null;
 
   constructor() {
     this.checkAbstractEcosystem();
+    this.initializePrivy();
   }
 
   private checkAbstractEcosystem(): void {
@@ -31,6 +33,19 @@ class AbstractWalletService {
       (window.location.hostname.includes('abs.xyz') || 
        window.location.hostname.includes('abstract.xyz') ||
        localStorage.getItem('abstract_wallet_connected') === 'true');
+  }
+
+  private async initializePrivy(): Promise<void> {
+    try {
+      // Dynamic import of Privy SDK
+      const { PrivyProvider, usePrivy, useCrossAppAccounts } = await import('@privy-io/react-auth');
+      
+      // For now, we'll simulate Privy initialization
+      // In a real implementation, you'd set up the PrivyProvider in your app
+      console.log('Privy SDK would be initialized here');
+    } catch (error) {
+      console.log('Privy SDK not available - using mock implementation');
+    }
   }
 
   async connectWallet(): Promise<WalletInfo | null> {
@@ -50,8 +65,29 @@ class AbstractWalletService {
 
   private async connectAbstractWallet(): Promise<WalletInfo> {
     try {
-      // Simulate Abstract wallet connection via Privy
-      // In a real implementation, this would integrate with Privy SDK
+      // Check if Privy is available
+      if (this.privyClient) {
+        // Real Privy integration would go here
+        // const { loginWithCrossAppAccount } = useCrossAppAccounts();
+        // await loginWithCrossAppAccount({ appId: 'your-abstract-app-id' });
+        throw new Error('Real Privy integration not yet implemented');
+      }
+
+      // For development/testing - show user what's happening
+      const shouldProceed = window.confirm(
+        'Abstract Wallet Integration\n\n' +
+        'This is a development simulation. In production, this would:\n' +
+        '• Connect to your Abstract Global Wallet\n' +
+        '• Use Privy SDK for authentication\n' +
+        '• Provide real blockchain functionality\n\n' +
+        'Continue with simulation?'
+      );
+
+      if (!shouldProceed) {
+        throw new Error('User cancelled Abstract wallet connection');
+      }
+
+      // Simulate Abstract wallet connection
       const mockAddress = '0x' + Math.random().toString(16).substr(2, 40);
       
       // Store connection state
@@ -64,7 +100,7 @@ class AbstractWalletService {
         chainId: 1, // Ethereum mainnet
         isConnected: true,
         isAbstractWallet: true,
-        network: 'Abstract Mainnet'
+        network: 'Abstract Mainnet (Simulated)'
       };
 
       return this.walletInfo;
