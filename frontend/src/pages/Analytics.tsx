@@ -14,7 +14,7 @@ const Analytics: React.FC = () => {
     if (user?.walletAddress) {
       fetchAnalytics();
     }
-  }, [user, period, fetchAnalytics]);
+  }, [user, period]);
 
   const fetchAnalytics = async () => {
     if (!user?.walletAddress) return;
