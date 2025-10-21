@@ -34,8 +34,6 @@ interface ChartProps {
 }
 
 export const Chart: React.FC<ChartProps> = ({ data, type, options, className }) => {
-  const chartRef = useRef<ChartJS>(null);
-
   const defaultOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -67,13 +65,13 @@ export const Chart: React.FC<ChartProps> = ({ data, type, options, className }) 
   const renderChart = () => {
     switch (type) {
       case 'line':
-        return <Line ref={chartRef} data={data} options={chartOptions} />;
+        return <Line data={data} options={chartOptions} />;
       case 'bar':
-        return <Bar ref={chartRef} data={data} options={chartOptions} />;
+        return <Bar data={data} options={chartOptions} />;
       case 'doughnut':
-        return <Doughnut ref={chartRef} data={data} options={chartOptions} />;
+        return <Doughnut data={data} options={chartOptions} />;
       default:
-        return <Line ref={chartRef} data={data} options={chartOptions} />;
+        return <Line data={data} options={chartOptions} />;
     }
   };
 

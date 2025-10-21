@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Target } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { analyticsAPI, AnalyticsData } from '../services/api';
-import Chart, { chartConfigs } from '../components/Chart';
+import SimpleChart, { chartConfigs } from '../components/SimpleChart';
 
 const Analytics: React.FC = () => {
   const { user } = useAuth();
@@ -176,7 +176,7 @@ const Analytics: React.FC = () => {
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">XP Growth Over Time</h3>
           <div className="h-64">
-            <Chart
+            <SimpleChart
               type="line"
               data={{
                 labels: analytics.xpTrend.map(point => point.date),
@@ -201,7 +201,7 @@ const Analytics: React.FC = () => {
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">XP Distribution by App</h3>
           <div className="h-64">
-            <Chart
+            <SimpleChart
               type="doughnut"
               data={{
                 labels: analytics.topApps.map(app => app.name),
