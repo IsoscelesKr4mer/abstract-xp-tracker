@@ -204,7 +204,7 @@ class AbstractWalletService {
       }
 
       // For development/testing, simulate Abstract connection
-      const shouldConnect = confirm(
+      const shouldConnect = window.confirm(
         'Switch to Abstract wallet? This will simulate Abstract ecosystem connection for testing.'
       );
 

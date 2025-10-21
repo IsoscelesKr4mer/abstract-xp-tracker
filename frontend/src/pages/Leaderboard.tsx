@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Medal, Crown } from 'lucide-react';
+import { Medal, Crown } from 'lucide-react';
 
 const Leaderboard: React.FC = () => {
   // Mock leaderboard data
