@@ -6,7 +6,7 @@ import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import Layout from './components/Layout';
 import { AuthProvider } from './contexts/AuthContext';
-import './App.css';
+import './index.css';
 
 function App() {
   return (
@@ -28,4 +28,3 @@ function App() {
 }
 
 export default App;
-
