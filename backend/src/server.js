@@ -69,6 +69,7 @@ app.use('/api/users', require('./controllers/userController'));
 app.use('/api/xp', require('./controllers/xpController'));
 app.use('/api/leaderboard', require('./controllers/leaderboardController'));
 app.use('/api/analytics', require('./controllers/analyticsController'));
+app.use('/api/pvp', require('./controllers/pvpController'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
