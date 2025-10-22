@@ -1,38 +1,82 @@
 const express = require('express');
 const router = express.Router();
+const User = require('../models/User');
+const XPRecord = require('../models/XPRecord');
+const App = require('../models/App');
 
-// Mock XP controller - will be implemented later
+// Real XP controller with Abstract integration
 router.get('/user/:walletAddress', async (req, res) => {
   try {
     const { walletAddress } = req.params;
     
-    // TODO: Fetch real XP data from Abstract blockchain
-    // Mock data for now
-    const mockXPData = {
-      walletAddress,
-      totalXP: 15420,
-      level: 15,
-      rank: 42,
-      badges: [
-        { id: 1, name: 'First Steps', description: 'Earned your first XP', earnedAt: '2024-01-15' },
-        { id: 2, name: 'Trader', description: 'Completed 10 trades', earnedAt: '2024-01-20' },
-        { id: 3, name: 'Collector', description: 'Minted 5 NFTs', earnedAt: '2024-02-01' }
-      ],
-      recentActivity: [
-        { app: 'Abstract Swap', xp: 150, timestamp: '2024-10-21T10:30:00Z' },
-        { app: 'Abstract NFT', xp: 200, timestamp: '2024-10-21T09:15:00Z' },
-        { app: 'Abstract DeFi', xp: 100, timestamp: '2024-10-20T16:45:00Z' }
-      ],
-      weeklyXP: 1250,
-      monthlyXP: 4200,
-      allTimeXP: 15420
+    // Fetch real user data from database
+    let user = await User.findOne({ walletAddress }).populate('badges');
+    
+    if (!user) {
+      // Create new user if they don't exist
+      user = new User({
+        walletAddress,
+        username: `User_${walletAddress.slice(0, 6)}`,
+        totalXP: 0,
+        level: 1,
+        badges: [],
+        friends: [],
+        preferences: {
+          notifications: true,
+          privacy: 'public',
+          theme: 'dark'
+        }
+      });
+      await user.save();
+    }
+
+    // Fetch recent XP records
+    const recentRecords = await XPRecord.find({ walletAddress })
+      .sort({ timestamp: -1 })
+      .limit(10)
+      .populate('appId');
+
+    // Calculate weekly and monthly XP
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const weeklyXP = await XPRecord.aggregate([
+      { $match: { walletAddress, timestamp: { $gte: weekAgo } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    const monthlyXP = await XPRecord.aggregate([
+      { $match: { walletAddress, timestamp: { $gte: monthAgo } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    // Get user rank
+    const userRank = await User.countDocuments({ totalXP: { $gt: user.totalXP } }) + 1;
+
+    const xpData = {
+      walletAddress: user.walletAddress,
+      totalXP: user.totalXP,
+      level: user.level,
+      rank: userRank,
+      badges: user.badges,
+      recentActivity: recentRecords.map(record => ({
+        app: record.appId?.name || 'Unknown App',
+        xp: record.amount,
+        timestamp: record.timestamp,
+        type: record.type
+      })),
+      weeklyXP: weeklyXP[0]?.total || 0,
+      monthlyXP: monthlyXP[0]?.total || 0,
+      allTimeXP: user.totalXP
     };
     
     res.json({
       success: true,
-      data: mockXPData
+      data: xpData
     });
   } catch (error) {
+    console.error('Error fetching XP data:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch XP data',
@@ -46,19 +90,62 @@ router.get('/history/:walletAddress', async (req, res) => {
     const { walletAddress } = req.params;
     const { period = '30d', limit = 100 } = req.query;
     
-    // TODO: Fetch real XP history from database
-    // Mock data for now
-    const mockHistory = Array.from({ length: 30 }, (_, i) => ({
-      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      xp: Math.floor(Math.random() * 500) + 50,
-      apps: ['Abstract Swap', 'Abstract NFT', 'Abstract DeFi', 'Abstract Game'][Math.floor(Math.random() * 4)]
-    }));
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate;
+    
+    switch (period) {
+      case '7d':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '90d':
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Fetch real XP history from database
+    const history = await XPRecord.find({
+      walletAddress,
+      timestamp: { $gte: startDate }
+    })
+    .sort({ timestamp: -1 })
+    .limit(parseInt(limit))
+    .populate('appId');
+
+    // Group by date for daily aggregation
+    const dailyData = {};
+    history.forEach(record => {
+      const date = record.timestamp.toISOString().split('T')[0];
+      if (!dailyData[date]) {
+        dailyData[date] = {
+          date,
+          xp: 0,
+          apps: new Set()
+        };
+      }
+      dailyData[date].xp += record.amount;
+      if (record.appId) {
+        dailyData[date].apps.add(record.appId.name);
+      }
+    });
+
+    const formattedHistory = Object.values(dailyData).map(day => ({
+      date: day.date,
+      xp: day.xp,
+      apps: Array.from(day.apps)
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
     
     res.json({
       success: true,
-      data: mockHistory.reverse()
+      data: formattedHistory
     });
   } catch (error) {
+    console.error('Error fetching XP history:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch XP history',
@@ -69,22 +156,108 @@ router.get('/history/:walletAddress', async (req, res) => {
 
 router.get('/apps', async (req, res) => {
   try {
-    // TODO: Fetch real app data from Abstract
-    const mockApps = [
-      { id: 1, name: 'Abstract Swap', description: 'Decentralized exchange', totalUsers: 12500, avgXP: 850 },
-      { id: 2, name: 'Abstract NFT', description: 'NFT marketplace', totalUsers: 8900, avgXP: 1200 },
-      { id: 3, name: 'Abstract DeFi', description: 'DeFi protocols', totalUsers: 15600, avgXP: 2100 },
-      { id: 4, name: 'Abstract Game', description: 'Play-to-earn game', totalUsers: 22000, avgXP: 1800 }
-    ];
+    // Fetch real app data from database
+    const apps = await App.find({}).sort({ totalUsers: -1 });
+    
+    // If no apps exist, create some default Abstract apps
+    if (apps.length === 0) {
+      const defaultApps = [
+        { name: 'Abstract DeFi', description: 'Decentralized finance protocols', totalUsers: 0, avgXP: 0 },
+        { name: 'Abstract NFT Marketplace', description: 'NFT trading platform', totalUsers: 0, avgXP: 0 },
+        { name: 'Abstract Gaming Hub', description: 'Play-to-earn gaming platform', totalUsers: 0, avgXP: 0 },
+        { name: 'Abstract Social', description: 'Social networking on Abstract', totalUsers: 0, avgXP: 0 },
+        { name: 'Abstract Trading', description: 'Advanced trading platform', totalUsers: 0, avgXP: 0 }
+      ];
+      
+      await App.insertMany(defaultApps);
+      const createdApps = await App.find({}).sort({ totalUsers: -1 });
+      return res.json({
+        success: true,
+        data: createdApps
+      });
+    }
     
     res.json({
       success: true,
-      data: mockApps
+      data: apps
     });
   } catch (error) {
+    console.error('Error fetching apps data:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch apps data',
+      error: error.message
+    });
+  }
+});
+
+// New endpoint to add XP for Abstract apps
+router.post('/add-xp', async (req, res) => {
+  try {
+    const { walletAddress, appName, amount, type = 'interaction' } = req.body;
+    
+    if (!walletAddress || !appName || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: walletAddress, appName, amount'
+      });
+    }
+
+    // Find or create the app
+    let app = await App.findOne({ name: appName });
+    if (!app) {
+      app = new App({
+        name: appName,
+        description: `Abstract app: ${appName}`,
+        totalUsers: 0,
+        avgXP: 0
+      });
+      await app.save();
+    }
+
+    // Create XP record
+    const xpRecord = new XPRecord({
+      walletAddress,
+      appId: app._id,
+      amount: parseInt(amount),
+      type,
+      timestamp: new Date()
+    });
+    await xpRecord.save();
+
+    // Update user's total XP
+    const user = await User.findOne({ walletAddress });
+    if (user) {
+      user.totalXP += parseInt(amount);
+      user.level = Math.floor(user.totalXP / 1000) + 1;
+      await user.save();
+    }
+
+    // Update app statistics
+    app.totalUsers = await XPRecord.distinct('walletAddress', { appId: app._id }).length;
+    const avgXPResult = await XPRecord.aggregate([
+      { $match: { appId: app._id } },
+      { $group: { _id: null, avgXP: { $avg: '$amount' } } }
+    ]);
+    app.avgXP = avgXPResult[0]?.avgXP || 0;
+    await app.save();
+    
+    res.json({
+      success: true,
+      message: 'XP added successfully',
+      data: {
+        walletAddress,
+        appName,
+        amount,
+        newTotalXP: user?.totalXP || 0,
+        newLevel: user?.level || 1
+      }
+    });
+  } catch (error) {
+    console.error('Error adding XP:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add XP',
       error: error.message
     });
   }
