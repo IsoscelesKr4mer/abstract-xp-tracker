@@ -38,7 +38,11 @@ app.use(limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'https://abstract-xp-tracker-frontend.vercel.app',
+    'https://abstract-xp-tracker-frontend-git-main-isosceleskr4mers-projects.vercel.app'
+  ],
   credentials: true
 }));
 
