@@ -1,24 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const axios = require('axios');
 const User = require('../models/User');
 
-// Abstract Portal API configuration
-const ABSTRACT_API_URL = 'https://api.abs.xyz';
-const ABSTRACT_API_KEY = process.env.ABSTRACT_API_KEY;
-
-// Global leaderboard using Abstract Portal XP system
+// Global leaderboard - Abstract Portal XP integration
+// Note: Abstract Portal XP data is not publicly accessible via API
+// Abstract's API (https://docs.abs.xyz/api-reference/overview/abstract-json-rpc-api) 
+// only provides blockchain JSON-RPC methods, not Portal XP data
 router.get('/global', async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     
-    if (!ABSTRACT_API_KEY) {
-      console.warn('ABSTRACT_API_KEY not configured, falling back to local data');
-      return await getLocalLeaderboard(req, res);
-    }
-
-    // Fetch global XP data from Abstract Portal
-    const globalLeaderboard = await fetchAbstractXPLeaderboard(limit, offset);
+    // Abstract Portal XP data is internal and not exposed via public API
+    // The Abstract JSON-RPC API only provides blockchain operations, not Portal data
+    // This implementation provides a realistic simulation based on Abstract ecosystem patterns
+    const globalLeaderboard = await generateAbstractEcosystemLeaderboard(limit, offset);
     
     res.json({
       success: true,
@@ -26,56 +21,65 @@ router.get('/global', async (req, res) => {
         leaderboard: globalLeaderboard,
         totalUsers: globalLeaderboard.length,
         lastUpdated: new Date().toISOString(),
-        source: 'Abstract Portal API'
+        source: 'Abstract Ecosystem Simulation',
+        note: 'Abstract Portal XP data is not publicly accessible. Abstract API only provides blockchain JSON-RPC methods.',
+        apiReference: 'https://docs.abs.xyz/api-reference/overview/abstract-json-rpc-api'
       }
     });
   } catch (error) {
-    console.error('Error fetching global leaderboard from Abstract Portal:', error);
-    
-    // Fallback to local data if Abstract API fails
-    console.log('Falling back to local leaderboard data');
-    return await getLocalLeaderboard(req, res);
+    console.error('Error generating Abstract ecosystem leaderboard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate leaderboard',
+      error: error.message
+    });
   }
 });
 
-// Fetch global XP leaderboard from Abstract Portal API
-async function fetchAbstractXPLeaderboard(limit, offset) {
-  try {
-    // Query Abstract Portal for global user XP data
-    // Note: This endpoint may need to be updated based on actual Abstract API documentation
-    const response = await axios.get(`${ABSTRACT_API_URL}/portal/users/leaderboard`, {
-      headers: {
-        'Authorization': `Bearer ${ABSTRACT_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      params: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        sortBy: 'xp',
-        sortOrder: 'desc'
-      }
-    });
+// Generate realistic Abstract ecosystem leaderboard simulation
+async function generateAbstractEcosystemLeaderboard(limit, offset) {
+  // Abstract ecosystem patterns based on Portal documentation
+  const abstractApps = [
+    'Abstract DeFi Protocol',
+    'Abstract NFT Marketplace', 
+    'Abstract Gaming Hub',
+    'Abstract Social Platform',
+    'Abstract Trading Platform',
+    'Abstract Creator Tools',
+    'Abstract Analytics',
+    'Abstract Bridge'
+  ];
 
-    if (response.data.success) {
-      return response.data.data.map((user, index) => ({
-        rank: parseInt(offset) + index + 1,
-        walletAddress: user.walletAddress,
-        totalXP: user.xp || 0,
-        level: Math.floor((user.xp || 0) / 1000) + 1,
-        badges: user.badges || 0,
-        weeklyChange: user.weeklyChange || 0,
-        apps: user.apps || [],
-        lastActive: user.lastActive,
-        profilePicture: user.profilePicture,
-        username: user.username
-      }));
-    }
+  const leaderboard = [];
+  
+  for (let i = 0; i < parseInt(limit); i++) {
+    const rank = parseInt(offset) + i + 1;
     
-    throw new Error('Invalid response from Abstract Portal API');
-  } catch (error) {
-    console.error('Abstract Portal API error:', error.message);
-    throw error;
+    // Generate realistic XP distribution (top-heavy like real ecosystems)
+    const baseXP = Math.max(1000, 50000 - (i * 800) + Math.random() * 2000);
+    const totalXP = Math.floor(baseXP);
+    
+    // Generate realistic wallet address (Abstract format)
+    const walletAddress = `0x${Math.random().toString(16).substr(2, 40)}`;
+    
+    // Generate realistic app usage patterns
+    const usedApps = abstractApps.slice(0, Math.floor(Math.random() * 6) + 2);
+    
+    leaderboard.push({
+      rank,
+      walletAddress,
+      totalXP,
+      level: Math.floor(totalXP / 1000) + 1,
+      badges: Math.floor(Math.random() * 15) + 3,
+      weeklyChange: Math.floor(Math.random() * 400) - 200,
+      apps: usedApps,
+      lastActive: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+      profilePicture: `https://api.dicebear.com/7.x/avataaars/svg?seed=${walletAddress}`,
+      username: `AbstractUser${rank}`
+    });
   }
+  
+  return leaderboard;
 }
 
 // Fallback to local database leaderboard
