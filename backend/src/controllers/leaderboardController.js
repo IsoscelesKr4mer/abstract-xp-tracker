@@ -1,31 +1,43 @@
 const express = require('express');
 const router = express.Router();
+const User = require('../models/User');
 
-// Mock leaderboard controller - will be implemented later
+// Real leaderboard controller with database integration
 router.get('/global', async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     
-    // TODO: Fetch real leaderboard data from database
-    // Mock data for now
-    const mockLeaderboard = Array.from({ length: parseInt(limit) }, (_, i) => ({
-      rank: parseInt(offset) + i + 1,
-      walletAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
-      totalXP: 50000 - (i * 1000),
-      level: Math.floor((50000 - (i * 1000)) / 1000),
-      badges: Math.floor(Math.random() * 20) + 5,
-      weeklyChange: Math.floor(Math.random() * 200) - 100
+    // Fetch real leaderboard data from database
+    const users = await User.find({})
+      .sort({ totalXP: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(offset))
+      .select('walletAddress totalXP level badges')
+      .lean();
+
+    // Calculate ranks and format data
+    const leaderboard = users.map((user, index) => ({
+      rank: parseInt(offset) + index + 1,
+      walletAddress: user.walletAddress,
+      totalXP: user.totalXP || 0,
+      level: user.level || 1,
+      badges: user.badges ? user.badges.length : 0,
+      weeklyChange: Math.floor(Math.random() * 200) - 100 // TODO: Calculate real weekly change
     }));
+
+    // Get total user count
+    const totalUsers = await User.countDocuments({});
     
     res.json({
       success: true,
       data: {
-        leaderboard: mockLeaderboard,
-        totalUsers: 125000,
+        leaderboard,
+        totalUsers,
         lastUpdated: new Date().toISOString()
       }
     });
   } catch (error) {
+    console.error('Error fetching global leaderboard:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch global leaderboard',
