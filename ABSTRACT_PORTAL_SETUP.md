@@ -1,62 +1,39 @@
-# XP Protocol Integration Setup
+# Abstract Portal XP Integration Setup
 
 ## 🎯 **What This Achieves**
 
-Your Abstract XP Tracker will now show **real global Abstract ecosystem data** instead of just users who visit your site.
+Your Abstract XP Tracker will now show **real global Abstract Portal XP data** from the official Abstract ecosystem instead of just users who visit your site.
 
-## 🔑 **Step 1: Get XP Protocol API Key**
+## 🔑 **Step 1: Get Abstract Portal API Key**
 
-1. **Visit**: https://docs.xp-protocol.io
-2. **Sign up** for XP Protocol access
-3. **Create a project** for Abstract XP tracking
-4. **Get your API key** from the dashboard
+1. **Visit**: https://docs.abs.xyz/api-reference
+2. **Sign up** for Abstract Portal API access
+3. **Get your API key** from the Abstract dashboard
+4. **Note**: Abstract Portal XP is the official reward system shown in the [Portal documentation](https://docs.abs.xyz/portal/overview#what-is-xp)
 
 ## ⚙️ **Step 2: Configure Environment Variables**
 
 ### **Local Development:**
 ```bash
 # In backend/.env
-XP_PROTOCOL_API_KEY=your-actual-api-key-here
+ABSTRACT_API_KEY=your-actual-abstract-api-key-here
 ```
 
 ### **Production (Railway):**
 1. Go to your Railway project dashboard
 2. Add environment variable:
-   - **Key**: `XP_PROTOCOL_API_KEY`
-   - **Value**: Your actual XP Protocol API key
+   - **Key**: `ABSTRACT_API_KEY`
+   - **Value**: Your actual Abstract Portal API key
 
-## 🚀 **Step 3: Create XP Protocol Project**
+## 🚀 **Step 3: Understanding Abstract Portal XP**
 
-You need to create a project in XP Protocol to track Abstract users:
+According to the [Abstract Portal documentation](https://docs.abs.xyz/portal/overview#what-is-xp):
 
-```bash
-curl -X POST https://api.xp-protocol.io/create-project \
-  -H "X-API-KEY: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "projectId": "abstract-xp-tracker",
-    "name": "Abstract XP Tracker",
-    "inputActions": [
-      {
-        "name": "app_interaction",
-        "points": 10,
-        "direction": 0
-      },
-      {
-        "name": "transaction_completed",
-        "points": 50,
-        "direction": 0
-      },
-      {
-        "name": "nft_minted",
-        "points": 100,
-        "direction": 0
-      }
-    ],
-    "owners": ["your-wallet-address"],
-    "updaters": ["your-wallet-address"]
-  }'
-```
+- **XP is earned** by using Abstract apps listed on the Discover page
+- **Updated weekly** and reflected in rewards profile
+- **Not transferable** between accounts
+- **Can be lost** for cheating or breaking rules
+- **Shows real ecosystem engagement** across all Abstract users
 
 ## 📊 **What You'll Get**
 

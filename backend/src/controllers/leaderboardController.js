@@ -3,22 +3,22 @@ const router = express.Router();
 const axios = require('axios');
 const User = require('../models/User');
 
-// XP Protocol API configuration
-const XP_PROTOCOL_API_URL = 'https://api.xp-protocol.io';
-const XP_PROTOCOL_API_KEY = process.env.XP_PROTOCOL_API_KEY;
+// Abstract Portal API configuration
+const ABSTRACT_API_URL = 'https://api.abs.xyz';
+const ABSTRACT_API_KEY = process.env.ABSTRACT_API_KEY;
 
-// Global leaderboard using XP Protocol API
+// Global leaderboard using Abstract Portal XP system
 router.get('/global', async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     
-    if (!XP_PROTOCOL_API_KEY) {
-      console.warn('XP_PROTOCOL_API_KEY not configured, falling back to local data');
+    if (!ABSTRACT_API_KEY) {
+      console.warn('ABSTRACT_API_KEY not configured, falling back to local data');
       return await getLocalLeaderboard(req, res);
     }
 
-    // Fetch global XP data from XP Protocol
-    const globalLeaderboard = await fetchGlobalXPLeaderboard(limit, offset);
+    // Fetch global XP data from Abstract Portal
+    const globalLeaderboard = await fetchAbstractXPLeaderboard(limit, offset);
     
     res.json({
       success: true,
@@ -26,31 +26,32 @@ router.get('/global', async (req, res) => {
         leaderboard: globalLeaderboard,
         totalUsers: globalLeaderboard.length,
         lastUpdated: new Date().toISOString(),
-        source: 'XP Protocol API'
+        source: 'Abstract Portal API'
       }
     });
   } catch (error) {
-    console.error('Error fetching global leaderboard from XP Protocol:', error);
+    console.error('Error fetching global leaderboard from Abstract Portal:', error);
     
-    // Fallback to local data if XP Protocol fails
+    // Fallback to local data if Abstract API fails
     console.log('Falling back to local leaderboard data');
     return await getLocalLeaderboard(req, res);
   }
 });
 
-// Fetch global XP leaderboard from XP Protocol API
-async function fetchGlobalXPLeaderboard(limit, offset) {
+// Fetch global XP leaderboard from Abstract Portal API
+async function fetchAbstractXPLeaderboard(limit, offset) {
   try {
-    // Query XP Protocol for global user scores
-    const response = await axios.get(`${XP_PROTOCOL_API_URL}/query-scores`, {
+    // Query Abstract Portal for global user XP data
+    // Note: This endpoint may need to be updated based on actual Abstract API documentation
+    const response = await axios.get(`${ABSTRACT_API_URL}/portal/users/leaderboard`, {
       headers: {
-        'X-API-KEY': XP_PROTOCOL_API_KEY,
+        'Authorization': `Bearer ${ABSTRACT_API_KEY}`,
         'Content-Type': 'application/json'
       },
       params: {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        sortBy: 'totalScore',
+        sortBy: 'xp',
         sortOrder: 'desc'
       }
     });
@@ -59,18 +60,20 @@ async function fetchGlobalXPLeaderboard(limit, offset) {
       return response.data.data.map((user, index) => ({
         rank: parseInt(offset) + index + 1,
         walletAddress: user.walletAddress,
-        totalXP: user.totalScore || 0,
-        level: Math.floor((user.totalScore || 0) / 1000) + 1,
+        totalXP: user.xp || 0,
+        level: Math.floor((user.xp || 0) / 1000) + 1,
         badges: user.badges || 0,
         weeklyChange: user.weeklyChange || 0,
         apps: user.apps || [],
-        lastActive: user.lastActive
+        lastActive: user.lastActive,
+        profilePicture: user.profilePicture,
+        username: user.username
       }));
     }
     
-    throw new Error('Invalid response from XP Protocol API');
+    throw new Error('Invalid response from Abstract Portal API');
   } catch (error) {
-    console.error('XP Protocol API error:', error.message);
+    console.error('Abstract Portal API error:', error.message);
     throw error;
   }
 }
