@@ -26,7 +26,7 @@ const Leaderboard: React.FC = () => {
         console.log('Leaderboard response:', response.data);
         
         if (response.data.success) {
-          setLeaderboard(response.data.data);
+          setLeaderboard(response.data.data.leaderboard);
         } else {
           setError('Failed to fetch leaderboard data');
         }
