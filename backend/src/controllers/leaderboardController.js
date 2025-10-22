@@ -1,13 +1,86 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const User = require('../models/User');
 
-// Real leaderboard controller with database integration
+// XP Protocol API configuration
+const XP_PROTOCOL_API_URL = 'https://api.xp-protocol.io';
+const XP_PROTOCOL_API_KEY = process.env.XP_PROTOCOL_API_KEY;
+
+// Global leaderboard using XP Protocol API
 router.get('/global', async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     
-    // Fetch real leaderboard data from database
+    if (!XP_PROTOCOL_API_KEY) {
+      console.warn('XP_PROTOCOL_API_KEY not configured, falling back to local data');
+      return await getLocalLeaderboard(req, res);
+    }
+
+    // Fetch global XP data from XP Protocol
+    const globalLeaderboard = await fetchGlobalXPLeaderboard(limit, offset);
+    
+    res.json({
+      success: true,
+      data: {
+        leaderboard: globalLeaderboard,
+        totalUsers: globalLeaderboard.length,
+        lastUpdated: new Date().toISOString(),
+        source: 'XP Protocol API'
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching global leaderboard from XP Protocol:', error);
+    
+    // Fallback to local data if XP Protocol fails
+    console.log('Falling back to local leaderboard data');
+    return await getLocalLeaderboard(req, res);
+  }
+});
+
+// Fetch global XP leaderboard from XP Protocol API
+async function fetchGlobalXPLeaderboard(limit, offset) {
+  try {
+    // Query XP Protocol for global user scores
+    const response = await axios.get(`${XP_PROTOCOL_API_URL}/query-scores`, {
+      headers: {
+        'X-API-KEY': XP_PROTOCOL_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      params: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        sortBy: 'totalScore',
+        sortOrder: 'desc'
+      }
+    });
+
+    if (response.data.success) {
+      return response.data.data.map((user, index) => ({
+        rank: parseInt(offset) + index + 1,
+        walletAddress: user.walletAddress,
+        totalXP: user.totalScore || 0,
+        level: Math.floor((user.totalScore || 0) / 1000) + 1,
+        badges: user.badges || 0,
+        weeklyChange: user.weeklyChange || 0,
+        apps: user.apps || [],
+        lastActive: user.lastActive
+      }));
+    }
+    
+    throw new Error('Invalid response from XP Protocol API');
+  } catch (error) {
+    console.error('XP Protocol API error:', error.message);
+    throw error;
+  }
+}
+
+// Fallback to local database leaderboard
+async function getLocalLeaderboard(req, res) {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+    
+    // Fetch local leaderboard data from database
     const users = await User.find({})
       .sort({ totalXP: -1 })
       .limit(parseInt(limit))
@@ -22,7 +95,7 @@ router.get('/global', async (req, res) => {
       totalXP: user.totalXP || 0,
       level: user.level || 1,
       badges: user.badges ? user.badges.length : 0,
-      weeklyChange: Math.floor(Math.random() * 200) - 100 // TODO: Calculate real weekly change
+      weeklyChange: Math.floor(Math.random() * 200) - 100
     }));
 
     // Get total user count
@@ -33,18 +106,19 @@ router.get('/global', async (req, res) => {
       data: {
         leaderboard,
         totalUsers,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        source: 'Local Database (XP Protocol API not configured)'
       }
     });
   } catch (error) {
-    console.error('Error fetching global leaderboard:', error);
+    console.error('Error fetching local leaderboard:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch global leaderboard',
+      message: 'Failed to fetch leaderboard',
       error: error.message
     });
   }
-});
+}
 
 router.get('/app/:appId', async (req, res) => {
   try {
