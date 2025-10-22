@@ -162,11 +162,51 @@ router.get('/apps', async (req, res) => {
     // If no apps exist, create some default Abstract apps
     if (apps.length === 0) {
       const defaultApps = [
-        { name: 'Abstract DeFi', description: 'Decentralized finance protocols', totalUsers: 0, avgXP: 0 },
-        { name: 'Abstract NFT Marketplace', description: 'NFT trading platform', totalUsers: 0, avgXP: 0 },
-        { name: 'Abstract Gaming Hub', description: 'Play-to-earn gaming platform', totalUsers: 0, avgXP: 0 },
-        { name: 'Abstract Social', description: 'Social networking on Abstract', totalUsers: 0, avgXP: 0 },
-        { name: 'Abstract Trading', description: 'Advanced trading platform', totalUsers: 0, avgXP: 0 }
+        { 
+          id: 'abstract-defi',
+          name: 'Abstract DeFi', 
+          description: 'Decentralized finance protocols', 
+          category: 'defi',
+          contractAddress: '0x0000000000000000000000000000000000000001',
+          totalUsers: 0, 
+          avgXPPerUser: 0 
+        },
+        { 
+          id: 'abstract-nft',
+          name: 'Abstract NFT Marketplace', 
+          description: 'NFT trading platform', 
+          category: 'nft',
+          contractAddress: '0x0000000000000000000000000000000000000002',
+          totalUsers: 0, 
+          avgXPPerUser: 0 
+        },
+        { 
+          id: 'abstract-gaming',
+          name: 'Abstract Gaming Hub', 
+          description: 'Play-to-earn gaming platform', 
+          category: 'gaming',
+          contractAddress: '0x0000000000000000000000000000000000000003',
+          totalUsers: 0, 
+          avgXPPerUser: 0 
+        },
+        { 
+          id: 'abstract-social',
+          name: 'Abstract Social', 
+          description: 'Social networking on Abstract', 
+          category: 'social',
+          contractAddress: '0x0000000000000000000000000000000000000004',
+          totalUsers: 0, 
+          avgXPPerUser: 0 
+        },
+        { 
+          id: 'abstract-trading',
+          name: 'Abstract Trading', 
+          description: 'Advanced trading platform', 
+          category: 'utility',
+          contractAddress: '0x0000000000000000000000000000000000000005',
+          totalUsers: 0, 
+          avgXPPerUser: 0 
+        }
       ];
       
       await App.insertMany(defaultApps);
@@ -207,10 +247,13 @@ router.post('/add-xp', async (req, res) => {
     let app = await App.findOne({ name: appName });
     if (!app) {
       app = new App({
+        id: `app-${appName.toLowerCase().replace(/\s+/g, '-')}`,
         name: appName,
         description: `Abstract app: ${appName}`,
+        category: 'other',
+        contractAddress: '0x0000000000000000000000000000000000000000',
         totalUsers: 0,
-        avgXP: 0
+        avgXPPerUser: 0
       });
       await app.save();
     }
@@ -239,7 +282,7 @@ router.post('/add-xp', async (req, res) => {
       { $match: { appId: app._id } },
       { $group: { _id: null, avgXP: { $avg: '$amount' } } }
     ]);
-    app.avgXP = avgXPResult[0]?.avgXP || 0;
+    app.avgXPPerUser = avgXPResult[0]?.avgXP || 0;
     await app.save();
     
     res.json({
